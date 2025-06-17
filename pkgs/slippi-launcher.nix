@@ -3,6 +3,7 @@
   makeDesktopItem,
   makeWrapper,
   fetchurl,
+  lib,
   stdenvNoCC,
 }:
 
@@ -48,4 +49,13 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp -r "$src/bin" "$out"
     runHook postInstall
   '';
+
+  meta = {
+    homepage = "https://slippi.gg";
+    description = "The way to play Slippi Online and watch replays";
+    mainProgram = "slippi-launcher";
+    # maintainers = with lib.maintainers; [ yuugen ];
+    platforms = lib.platforms.linux;
+    license = lib.licenses.gpl3Only;
+  };
 })
