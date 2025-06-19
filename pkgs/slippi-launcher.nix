@@ -1,61 +1,40 @@
 {
   appimageTools,
-  makeDesktopItem,
-  makeWrapper,
   fetchurl,
   lib,
-  stdenvNoCC,
+  makeWrapper,
 }:
 
-stdenvNoCC.mkDerivation (finalAttrs: {
-  pname = "slippi-launcher";
+let
   version = "2.11.10";
-
-  src = appimageTools.wrapType2 {
-    inherit (finalAttrs) pname version;
-    src = fetchurl {
-      url = "https://github.com/project-slippi/slippi-launcher/releases/download/v${finalAttrs.version}/Slippi-Launcher-${finalAttrs.version}-x86_64.AppImage";
-      hash = "sha256-OrWd0jVqe6CzNbVRNlm2alt2NZ8uBYeHiASaB74ouW4=";
-    };
-    nativeBuildInputs = [ makeWrapper ];
-    extraInstallCommands = ''
-      wrapProgram $out/bin/slippi-launcher \
-        --add-flags "\''${NIXOS_OZONE_WL:+\''${WAYLAND_DISPLAY:+--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations}}"
-    '';
+  mainProgram = "slippi-launcher";
+in
+appimageTools.wrapType2 rec {
+  inherit version;
+  pname = "slippi-netplay";
+  src = fetchurl {
+    url = "https://github.com/project-slippi/slippi-launcher/releases/download/v${version}/Slippi-Launcher-${version}-x86_64.AppImage";
+    hash = "sha256-OrWd0jVqe6CzNbVRNlm2alt2NZ8uBYeHiASaB74ouW4=";
   };
+  appImageContents = appimageTools.extract { inherit pname src version; };
+  nativeBuildInputs = [ makeWrapper ];
+  extraPkgs = pkgs: [ pkgs.curl ];
+  extraInstallCommands = ''
+    wrapProgram "$out/bin/${pname}" \
+     --inherit-argv0
+    mkdir -p "$out/share/applications"
+    cp -r "${appImageContents}/$(readlink "${appImageContents}/slippi-launcher.png")" "$out/share/applications/"
 
-  desktopItems = [
-    (makeDesktopItem {
-      name = "slippi-launcher";
-      exec = "slippi-launcher";
-      icon = "slippi-launcher";
-      desktopName = "Slippi Launcher";
-      comment = "The way to play Slippi Online and watch replays";
-      type = "Application";
-      categories = [
-        "Game"
-      ];
-      keywords = [
-        "slippi"
-        "melee"
-        "rollback"
-      ];
-    })
-  ];
-
-  installPhase = ''
-    runHook preInstall
-    mkdir -p "$out/bin"
-    cp -r "$src/bin" "$out"
-    runHook postInstall
+    sed -e '/Icon/d' -e '/Exec/d' "${appImageContents}/slippi-launcher.desktop" > "$out/share/applications/slippi-launcher.desktop"
+    echo "Icon=$out/share/applications/slippi-launcher.png" >> "$out/share/applications/slippi-launcher.desktop"
+    echo "Exec=$out/bin/${pname} %U" >> "$out/share/applications/slippi-launcher.desktop"
   '';
 
   meta = {
+    inherit mainProgram;
     homepage = "https://slippi.gg";
     description = "The way to play Slippi Online and watch replays";
-    mainProgram = "slippi-launcher";
-    # maintainers = with lib.maintainers; [ yuugen ];
     platforms = lib.platforms.linux;
     license = lib.licenses.gpl3Only;
   };
-})
+}

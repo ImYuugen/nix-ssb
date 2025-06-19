@@ -1,4 +1,4 @@
-{ lib, pkgs }:
+{ pkgs }:
 
 {
   slippi-launcher = pkgs.callPackage ./slippi-launcher.nix { };
