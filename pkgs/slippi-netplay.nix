@@ -16,7 +16,7 @@ let
 in
 appimageTools.wrapType2 rec {
   inherit version;
-  pname = "slippi-netplay";
+  pname = mainProgram;
   src = "${raw}/${mainProgram}";
   nativeBuildInputs = [ makeWrapper ];
   extraPkgs = pkgs: [ pkgs.curl ];
