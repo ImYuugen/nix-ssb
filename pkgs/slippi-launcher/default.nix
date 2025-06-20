@@ -35,6 +35,7 @@ mkYarnPackage {
   ];
 
   postBuild = ''
+    export HOME=$(mktemp -d)
     yarn --offline run package
       --dir \
       -c.electronDist=${electron}/lib/electron \
