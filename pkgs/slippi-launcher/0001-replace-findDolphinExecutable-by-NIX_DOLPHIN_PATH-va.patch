@@ -1,0 +1,164 @@
+From b2c3f4658aa88f2408be48a889760b1dfe0325c3 Mon Sep 17 00:00:00 2001
+From: Yuugen <yuugenssb@proton.me>
+Date: Fri, 20 Jun 2025 20:45:15 +0200
+Subject: [PATCH] replace findDolphinExecutable by NIX_DOLPHIN_PATH var
+
+Signed-off-by: Yuugen <yuugenssb@proton.me>
+---
+ src/dolphin/install/ishiiruka_installation.ts | 37 +----------------
+ src/dolphin/install/mainline_installation.ts  | 41 +------------------
+ src/dolphin/util.ts                           | 38 +----------------
+ 3 files changed, 3 insertions(+), 113 deletions(-)
+
+diff --git a/src/dolphin/install/ishiiruka_installation.ts b/src/dolphin/install/ishiiruka_installation.ts
+index 63a101ee..e24a7e64 100644
+--- a/src/dolphin/install/ishiiruka_installation.ts
++++ b/src/dolphin/install/ishiiruka_installation.ts
+@@ -68,42 +68,7 @@ export class IshiirukaDolphinInstallation implements DolphinInstallation {
+   }
+ 
+   public async findDolphinExecutable(): Promise<string> {
+-    const dolphinPath = this.installationFolder;
+-    const type = this.dolphinLaunchType;
+-    // Check the directory contents
+-    const files = await fs.readdir(dolphinPath);
+-    const result = files.find((filename) => {
+-      switch (process.platform) {
+-        case "win32":
+-          return filename.endsWith("Dolphin.exe");
+-        case "darwin":
+-          return filename.endsWith("Dolphin.app");
+-        case "linux": {
+-          const appimagePrefix = type === DolphinLaunchType.NETPLAY ? "Slippi_Online" : "Slippi_Playback";
+-          const isAppimage = filename.startsWith(appimagePrefix) && filename.endsWith("AppImage");
+-          return isAppimage || filename.endsWith("dolphin-emu");
+-        }
+-        default:
+-          return false;
+-      }
+-    });
+-
+-    if (!result) {
+-      throw new Error(
+-        `No ${type} Dolphin found in: ${dolphinPath}, try restarting the launcher. Ask in the Slippi Discord's support channels for further help`,
+-      );
+-    }
+-
+-    if (process.platform === "darwin") {
+-      const dolphinBinaryPath = path.join(dolphinPath, result, "Contents", "MacOS", "Slippi Dolphin");
+-      const dolphinExists = await fs.pathExists(dolphinBinaryPath);
+-      if (!dolphinExists) {
+-        throw new Error(`No ${type} Dolphin found in: ${dolphinPath}, try resetting dolphin`);
+-      }
+-      return dolphinBinaryPath;
+-    }
+-
+-    return path.join(dolphinPath, result);
++    return "@NIX_DOLPHIN_PATH@";
+   }
+ 
+   public async clearCache() {
+diff --git a/src/dolphin/install/mainline_installation.ts b/src/dolphin/install/mainline_installation.ts
+index 6c45105a..c6fc7a6e 100644
+--- a/src/dolphin/install/mainline_installation.ts
++++ b/src/dolphin/install/mainline_installation.ts
+@@ -74,46 +74,7 @@ export class MainlineDolphinInstallation implements DolphinInstallation {
+   }
+ 
+   public async findDolphinExecutable(): Promise<string> {
+-    const dolphinPath = this.installationFolder;
+-    const type = this.dolphinLaunchType;
+-
+-    // Make sure the directory actually exists
+-    await fs.ensureDir(dolphinPath);
+-
+-    // Check the directory contents
+-    const files = await fs.readdir(dolphinPath);
+-    const result = files.find((filename) => {
+-      switch (process.platform) {
+-        case "win32":
+-          return filename.endsWith("Dolphin.exe");
+-        case "darwin":
+-          return filename.endsWith("Dolphin.app");
+-        case "linux": {
+-          const appimagePrefix = type === DolphinLaunchType.NETPLAY ? "Slippi_Netplay" : "Slippi_Playback";
+-          const isAppimage = filename.startsWith(appimagePrefix) && filename.endsWith("AppImage");
+-          return isAppimage || filename.endsWith("dolphin-emu");
+-        }
+-        default:
+-          return false;
+-      }
+-    });
+-
+-    if (!result) {
+-      throw new Error(
+-        `No ${type} Dolphin found in: ${dolphinPath}, try restarting the launcher. Ask in the Slippi Discord's support channels for further help`,
+-      );
+-    }
+-
+-    if (process.platform === "darwin") {
+-      const dolphinBinaryPath = path.join(dolphinPath, result, "Contents", "MacOS", "Slippi_Dolphin");
+-      const dolphinExists = await fs.pathExists(dolphinBinaryPath);
+-      if (!dolphinExists) {
+-        throw new Error(`No ${type} Dolphin found in: ${dolphinPath}, try resetting dolphin`);
+-      }
+-      return dolphinBinaryPath;
+-    }
+-
+-    return path.join(dolphinPath, result);
++    return "@NIX_DOLPHIN_PATH@";
+   }
+ 
+   public async clearCache() {
+diff --git a/src/dolphin/util.ts b/src/dolphin/util.ts
+index a4eaf29a..41e1f807 100644
+--- a/src/dolphin/util.ts
++++ b/src/dolphin/util.ts
+@@ -9,43 +9,7 @@ import type { DolphinInstallation } from "./types";
+ import { DolphinLaunchType } from "./types";
+ 
+ export async function findDolphinExecutable(type: DolphinLaunchType, dolphinPath: string): Promise<string> {
+-  // Make sure the directory actually exists
+-  await fs.ensureDir(dolphinPath);
+-
+-  // Check the directory contents
+-  const files = await fs.readdir(dolphinPath);
+-  const result = files.find((filename) => {
+-    switch (process.platform) {
+-      case "win32":
+-        return filename.endsWith("Dolphin.exe");
+-      case "darwin":
+-        return filename.endsWith("Dolphin.app");
+-      case "linux": {
+-        const appimagePrefix = type === DolphinLaunchType.NETPLAY ? "Slippi_Online" : "Slippi_Playback";
+-        const isAppimage = filename.startsWith(appimagePrefix) && filename.endsWith("AppImage");
+-        return isAppimage || filename.endsWith("dolphin-emu");
+-      }
+-      default:
+-        return false;
+-    }
+-  });
+-
+-  if (!result) {
+-    throw new Error(
+-      `No ${type} Dolphin found in: ${dolphinPath}, try restarting the launcher. Ask in the Slippi Discord's support channels for further help`,
+-    );
+-  }
+-
+-  if (process.platform === "darwin") {
+-    const dolphinBinaryPath = path.join(dolphinPath, result, "Contents", "MacOS", "Slippi Dolphin");
+-    const dolphinExists = await fs.pathExists(dolphinBinaryPath);
+-    if (!dolphinExists) {
+-      throw new Error(`No ${type} Dolphin found in: ${dolphinPath}, try resetting dolphin`);
+-    }
+-    return dolphinBinaryPath;
+-  }
+-
+-  return path.join(dolphinPath, result);
++  return "@NIX_DOLPHIN_PATH@";
+ }
+ 
+ export async function updateBootToCssCode(installation: DolphinInstallation, options: { enable: boolean }) {
+-- 
+2.49.0
+
