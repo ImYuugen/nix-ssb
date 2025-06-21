@@ -20,19 +20,12 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "project-slippi";
     repo = "slippi-launcher";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-JrM2nm5iEAoyrGeqF1iP+kKjdiC/3mfCihzawg3Xv9s=";
+    hash = "sha256-ASLoJSB3cf7GP7VFZP0AZN4BxbMtBAxu125BiEB3+lg=";
+    postFetch = ''
+      cd $out
+      patch < ${./0001-make-yarn.lock-fetch-from-yarn-registry-for-node-gyp.patch}
+    '';
   };
-  offlineCache = fetchYarnDeps {
-    yarnLock = "${finalAttrs.src}/yarn.lock";
-    hash = "sha256-zrN8ZY6ZO/L4gDufWY1Ts00mauAaQxyQTbaqjKBt0kI=";
-  };
-
-  nativeBuildInputs = [
-    makeWrapper
-    nodejs
-    yarnBuildHook
-    yarnConfigHook
-  ];
 
   env.ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
   patches = [
@@ -41,11 +34,21 @@ stdenv.mkDerivation (finalAttrs: {
     })
   ];
 
-  yarnBuildScript = "run package";
+  offlineCache = fetchYarnDeps {
+    yarnLock = "${finalAttrs.src}/yarn.lock";
+    hash = "sha256-MgYpnTyDG5ih6yIiVMjejJuLHy5Q2+/tvPUUEaON9xg=";
+  };
   yarnBuildFlags = [
     "--dir"
     "-c.electronDist=${electron.dist}"
     "-c.electronVersion=${electron.version}"
+  ];
+
+  nativeBuildInputs = [
+    makeWrapper
+    nodejs
+    yarnBuildHook
+    yarnConfigHook
   ];
   installPhase = ''
     runHook preInstall
