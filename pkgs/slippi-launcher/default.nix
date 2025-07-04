@@ -1,8 +1,8 @@
 {
-  electron,
   fetchFromGitHub,
   fetchYarnDeps,
   lib,
+  git,
   makeDesktopItem,
   makeWrapper,
   nodejs,
@@ -20,11 +20,13 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "project-slippi";
     repo = "slippi-launcher";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-ASLoJSB3cf7GP7VFZP0AZN4BxbMtBAxu125BiEB3+lg=";
+    hash = "sha256-ArFRjTMObYzHtGWrexYDyLdke1NBiyHjdpp/QXMQKxM=";
     postFetch = ''
       cd $out
       patch < ${./0001-make-yarn.lock-fetch-from-yarn-registry-for-node-gyp.patch}
     '';
+    # Needed for some fuckass `git rev-parse` that I don't wanna patch
+    leaveDotGit = true;
   };
 
   env.ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
@@ -38,13 +40,9 @@ stdenv.mkDerivation (finalAttrs: {
     yarnLock = "${finalAttrs.src}/yarn.lock";
     hash = "sha256-MgYpnTyDG5ih6yIiVMjejJuLHy5Q2+/tvPUUEaON9xg=";
   };
-  yarnBuildFlags = [
-    "--dir"
-    "-c.electronDist=${electron.dist}"
-    "-c.electronVersion=${electron.version}"
-  ];
 
   nativeBuildInputs = [
+    git
     makeWrapper
     nodejs
     yarnBuildHook
@@ -52,10 +50,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   installPhase = ''
     runHook preInstall
-
-    makeWrapper "${lib.getExe electron}" "$out/bin/${finalAttrs.pname}" \
-      --add-flags "\''${NIXOS_OZONE_WL:+\''${WAYLAND_DISPLAY:+--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations}}" \
-      --inherit-argv0
+    echo "Running install phase"
 
     runHook postInstall
   '';
